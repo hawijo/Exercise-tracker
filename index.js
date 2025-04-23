@@ -40,13 +40,6 @@ app.post("/api/users", (req, res) => {
   var newUser = new User({
     username: username,
     count: 0,
-    log: [
-      {
-        description: "",
-        duration: 0,
-        date: date,
-      },
-    ],
   });
   newUser
     .save()
