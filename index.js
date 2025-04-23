@@ -18,6 +18,7 @@ var userSchema = new mongoose.Schema({
   count: Number,
   log: [
     {
+      _id: false,
       description: String,
       duration: Number,
       date: String,
@@ -112,6 +113,7 @@ app.post("/api/users/:id/exercises", (req, res) => {
       console.log(err);
       res.status(500).json({ error: "Internal Server Error" });
     });
+
 });
 
 //Get all user logs
