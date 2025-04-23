@@ -20,7 +20,7 @@ var userSchema = new mongoose.Schema({
     {
       description: String,
       duration: Number,
-      date: Number,
+      date: String,
     },
   ],
 });
@@ -43,7 +43,7 @@ app.post("/api/users", (req, res) => {
       {
         description: "",
         duration: 0,
-        date: 0,
+        date: "Nand",
       },
     ],
   });
@@ -76,7 +76,96 @@ app.get("/api/users", (req, res) => {
     });
 });
 
+//Add exercise
+app.post("/api/users/:id/exercises", (req, res) => {
+  var userId = req.params.id;
+  var description = req.body.description;
+  var duration = parseInt(req.body.duration);
+  var date = req.body.date;
+  if (date == "") {
+    date = new Date().toDateString();
+  }
+  date = new Date(date).toDateString();
 
+  var newLog = {
+    description: description,
+    duration: duration,
+    date: date,
+  };
+
+  User.findById(userId)
+    .then((user) => {
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      user.count += 1;
+      user.log.push(newLog);
+      return user.save();
+    })
+    .then((data) => {
+      res.json({
+        username: data.username,
+        count: data.count,
+        _id: data._id,
+        log: [
+          {
+            description: newLog.description,
+            duration: newLog.duration,
+            date: newLog.date,
+          },
+        ],
+      });
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).json({ error: "Internal Server Error" });
+    });
+});
+
+//Get all user logs
+app.get("/api/users/:id/logs", (req, res) => {
+  var userId = req.params.id;
+  var from = req.params.from;
+  var to = req.params.to;
+  var limit = parseInt(req.params.limit);
+
+  User.findById(userId)
+    .then((user) => {
+      if (from && to) {
+        from = new Date(from).getTime();
+        to = new Date(to).getTime();
+        if (limit > 0) {
+          user.log = user.log
+            .filter((log) => {
+              var logDate = new Date(log.date).getTime();
+              return logDate >= from && logDate <= to;
+            })
+            .slice(0, limit);
+        } else {
+          user.log = user.log.filter((log) => {
+            var logDate = new Date(log.date).getTime();
+            return logDate >= from && logDate <= to;
+          });
+        }
+      }
+      res.json({
+        username: user.username,
+        count: user.count,
+        _id: user._id,
+        log: user.log.map((log) => {
+          return {
+            description: log.description,
+            duration: log.duration,
+            date: log.date,
+          };
+        }),
+      });
+    })
+    .catch((err) => {
+      console.log(err);
+      res.status(500).json({ error: "Internal Server Error" });
+    });
+});
 
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log("Your app is listening on port " + listener.address().port);
