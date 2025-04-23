@@ -124,22 +124,38 @@ app.post("/api/users/:id/exercises", (req, res) => {
 //Get all user logs
 app.get("/api/users/:id/logs", (req, res) => {
   var userId = req.params.id;
+  var from = req.query.from;
+  var to = req.query.to;
+  var limit = req.query.limit ? parseInt(req.query.limit) : undefined;
+
   User.findById(userId)
     .then((user) => {
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
+
+      let logs = user.log;
+
+      // Filter logs by from and to dates if provided
+      if (from) {
+        const fromDate = new Date(from);
+        logs = logs.filter((log) => new Date(log.date) >= fromDate);
+      }
+      if (to) {
+        const toDate = new Date(to);
+        logs = logs.filter((log) => new Date(log.date) <= toDate);
+      }
+
+      // Apply limit if provided
+      if (limit) {
+        logs = logs.slice(0, limit);
+      }
+
       res.json({
         _id: user._id,
         username: user.username,
-        count: user.count,
-        log: user.log.map((log) => {
-          return {
-            description: log.description,
-            duration: log.duration,
-            date: log.date,
-          };
-        }),
+        count: logs.length,
+        log: logs,
       });
     })
     .catch((err) => {
@@ -152,46 +168,6 @@ app.get("/api/users/:id/logs", (req, res) => {
 //GET user's exercise log: GET /api/users/:_id/logs?[from][&to][&limit]
 //[ ] = optional
 //from, to = dates (yyyy-mm-dd); limit = number
-app.get("/api/users/:_id/logs", (req, res) => {
-  const userId = req.params._id;
-  const from = req.query.from ? new Date(req.query.from) : null;
-  const to = req.query.to ? new Date(req.query.to) : null;
-  const limit = parseInt(req.query.limit);
-
-  User.findById(userId)
-    .then((user) => {
-      if (!user) {
-        return res.status(404).json({ error: "User not found" });
-      }
-
-      let log = user.log;
-
-      if (from) {
-        log = log.filter((entry) => new Date(entry.date) >= from);
-      }
-      if (to) {
-        log = log.filter((entry) => new Date(entry.date) <= to);
-      }
-      if (limit) {
-        log = log.slice(0, limit);
-      }
-
-      res.json({
-        username: user.username,
-        count: user.count,
-        _id: user._id,
-        log: log.map((entry) => ({
-          description: entry.description,
-          duration: entry.duration,
-          date: entry.date,
-        })),
-      });
-    })
-    .catch((err) => {
-      console.log(err);
-      res.status(500).json({ error: "Internal Server Error" });
-    });
-});
 
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log("Your app is listening on port " + listener.address().port);
