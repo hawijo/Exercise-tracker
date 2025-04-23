@@ -125,28 +125,10 @@ app.post("/api/users/:id/exercises", (req, res) => {
 //Get all user logs
 app.get("/api/users/:id/logs", (req, res) => {
   var userId = req.params.id;
-  var from = req.params.from;
-  var to = req.params.to;
-  var limit = parseInt(req.params.limit);
-
   User.findById(userId)
     .then((user) => {
-      if (from && to) {
-        from = new Date(from).getTime();
-        to = new Date(to).getTime();
-        if (limit > 0) {
-          user.log = user.log
-            .filter((log) => {
-              var logDate = new Date(log.date).getTime();
-              return logDate >= from && logDate <= to;
-            })
-            .slice(0, limit);
-        } else {
-          user.log = user.log.filter((log) => {
-            var logDate = new Date(log.date).getTime();
-            return logDate >= from && logDate <= to;
-          });
-        }
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
       }
       res.json({
         username: user.username,
