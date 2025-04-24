@@ -72,6 +72,34 @@ app.get("/api/users", (req, res) => {
 });
 
 //Add exercise
+
+function isValidDate(dateString) {
+  // Check format yyyy-m-d or yyyy-mm-dd using regex (allow 1 or 2 digits for month and day)
+  if (!/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateString)) {
+    return false;
+  }
+  // Parse the date parts to integers
+  const parts = dateString.split("-");
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const day = parseInt(parts[2], 10);
+
+  // Check the ranges of month and day
+  if (month < 1 || month > 12) return false;
+  if (day < 1 || day > 31) return false;
+
+  // Create a date object and check if the date is valid
+  const date = new Date(dateString);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() + 1 !== month ||
+    date.getDate() !== day
+  ) {
+    return false;
+  }
+  return true;
+}
+
 app.post("/api/users/:id/exercises", (req, res) => {
   var userId = req.params.id;
   var description = req.body.description;
@@ -79,9 +107,14 @@ app.post("/api/users/:id/exercises", (req, res) => {
   var date = req.body.date;
   description = description.toString();
   duration = parseInt(duration);
-  if (date == "") {
-    date = new Date().toDateString();
+
+  if (!date || !isValidDate(date)) {
+    // If date is missing or invalid, set to today's date in yyyy-mm-dd format
+    const today = new Date();
+    date = today.toISOString().split("T")[0];
   }
+
+  // Convert date to a readable string format like "Mon Jan 01 1990"
   date = new Date(date).toDateString();
 
   var newLog = {
